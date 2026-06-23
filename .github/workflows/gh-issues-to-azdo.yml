@@ -193,14 +193,12 @@ jobs:
 
           # Adding additional custom fields if the work item type is "Bug"
           if [[ "$WORK_ITEM_TYPE" == "Bug" ]]; then
-            # Prefix for the Custom.ReportedIn field (local to this step)
-            REPORTED_IN_PREFIX="STS Software Bundle"
             STS_VERSION=$(echo "$ISSUE_BODY" | sed -n '/System Setup/,$p' | grep -oP '(?<=STS Software Version )\d+\.\d+(\.\w+)?' | head -n 1 | tr -d '\r')
             # Check if STS_VERSION matches expected format
             if [[ -n "$STS_VERSION" ]]; then
-              REPORTED_IN="$REPORTED_IN_PREFIX $STS_VERSION"
+              REPORTED_IN="STS Software Bundle $STS_VERSION"
             else
-              REPORTED_IN="$REPORTED_IN_PREFIX"
+              REPORTED_IN="STS Software Bundle"
             fi
             echo "Extracted STS Software Version: $STS_VERSION"
             echo "Final ReportedIn value: $REPORTED_IN"
@@ -457,11 +455,12 @@ jobs:
               "attributes": {"name": "GitHub Issue"}
             }}]')
           echo "$PATCH_RELATION" > patch-relation.json
+          WORK_ITEM_API_URL="$AZDO_BASE_URL/_apis/wit/workitems/$WORK_ITEM_ID?api-version=$AZDO_API_VERSION"
           RESPONSE=$(curl -s -u :$AZURE_DEVOPS_TOKEN \
             -X PATCH \
             -H "Content-Type: application/json-patch+json" \
             --data @patch-relation.json \
-            "$AZDO_BASE_URL/_apis/wit/workitems/$WORK_ITEM_ID?api-version=$AZDO_API_VERSION")
+            "$WORK_ITEM_API_URL")
 
       # NOTE: The [work item](url) link in this comment is what the comment-sync
       # job (JOB 2) parses to find the linked work item — it must remain.
@@ -682,11 +681,12 @@ jobs:
 
           echo "$PATCH_DOC" > patch-comment.json
 
+          WORK_ITEM_API_URL="$AZDO_BASE_URL/_apis/wit/workitems/$WORK_ITEM_ID?api-version=$AZDO_API_VERSION"
           RESPONSE=$(curl -s -u :$AZURE_DEVOPS_TOKEN \
             -X PATCH \
             -H "Content-Type: application/json-patch+json" \
             --data @patch-comment.json \
-            "$AZDO_BASE_URL/_apis/wit/workitems/$WORK_ITEM_ID?api-version=$AZDO_API_VERSION")
+            "$WORK_ITEM_API_URL")
 
           if echo "$RESPONSE" | jq -e '.id' > /dev/null; then
             echo "Comment synced to Work Item #$WORK_ITEM_ID"
